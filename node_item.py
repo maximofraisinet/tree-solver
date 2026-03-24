@@ -24,15 +24,15 @@ class NodeItem(QGraphicsItem):
         self.is_start = False
         self.scene_ref = scene_ref
         self.connected_edges = []
-        self.current_brush = QBrush(QColor("#ffffff"))
+        self.current_brush = QBrush(QColor("#2d1f1f"))
         
-        self.default_color = QColor("#ffffff")
-        self.border_color = QColor("#2c3e50")
-        self.goal_border_color = QColor("#27ae60")
+        self.default_color = QColor("#2d1f1f")
+        self.border_color = QColor("#8b2e2e")
+        self.goal_border_color = QColor("#2ecc71")
         self.start_border_color = QColor("#3498db")
-        self.visiting_color = QColor("#f1c40f")
-        self.visited_color = QColor("#bdc3c7")
-        self.path_color = QColor("#27ae60")
+        self.visiting_color = QColor("#c0392b")
+        self.visited_color = QColor("#5a2a2a")
+        self.path_color = QColor("#2ecc71")
         
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable)
@@ -40,8 +40,8 @@ class NodeItem(QGraphicsItem):
         
         self.text_item = QGraphicsTextItem(self)
         self.text_item.setPlainText(name)
-        self.text_item.setDefaultTextColor(QColor("#2c3e50"))
-        font = QFont("Arial", 12, QFont.Weight.Bold)
+        self.text_item.setDefaultTextColor(QColor("#e0e0e0"))
+        font = QFont("Segoe UI", 11, QFont.Weight.Bold)
         self.text_item.setFont(font)
         self.text_item.setPos(-self.text_item.boundingRect().width() / 2, -self.text_item.boundingRect().height() / 2)
     
@@ -57,7 +57,7 @@ class NodeItem(QGraphicsItem):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
         if self.isSelected():
-            border = QPen(QColor("#3498db"), 3)
+            border = QPen(QColor("#e74c3c"), 3)
         elif self.is_goal:
             border = QPen(self.goal_border_color, 4)
         elif self.is_start:
@@ -68,9 +68,9 @@ class NodeItem(QGraphicsItem):
         painter.setPen(border)
         
         if self.is_goal:
-            brush = QBrush(QColor("#e8f8f5"))
+            brush = QBrush(QColor("#1a2f1a"))
         elif self.is_start:
-            brush = QBrush(QColor("#ebf5fb"))
+            brush = QBrush(QColor("#1a2a33"))
         else:
             brush = self.current_brush
         

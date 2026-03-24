@@ -208,7 +208,7 @@ class MainWindow(QMainWindow):
         
         self.scene = QGraphicsScene(self)
         self.scene.setSceneRect(-500, -350, 1000, 700)
-        self.scene.setBackgroundBrush(QColor("#f0f0f0"))
+        self.scene.setBackgroundBrush(QColor("#1a1a1a"))
         
         self.view = QGraphicsView(self.scene, self)
         self.view.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -223,6 +223,154 @@ class MainWindow(QMainWindow):
         
         self.view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.view.customContextMenuRequested.connect(self.show_context_menu)
+        
+        self._apply_dark_theme()
+    
+    def _apply_dark_theme(self):
+        dark_stylesheet = """
+        QMainWindow {
+            background-color: #1a1a1a;
+        }
+        
+        QWidget {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', 'Roboto', sans-serif;
+            font-size: 13px;
+        }
+        
+        QToolBar {
+            background-color: #2d1f1f;
+            border: none;
+            padding: 6px;
+            spacing: 8px;
+        }
+        
+        QPushButton {
+            background-color: #8b2e2e;
+            color: #ffffff;
+            border: 1px solid #a33c3c;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-weight: bold;
+            min-width: 90px;
+        }
+        
+        QPushButton:hover {
+            background-color: #a33c3c;
+            border: 1px solid #c45050;
+        }
+        
+        QPushButton:pressed {
+            background-color: #6b2424;
+        }
+        
+        QPushButton:disabled {
+            background-color: #3d2020;
+            color: #666666;
+            border: 1px solid #4a2828;
+        }
+        
+        QLabel {
+            color: #c45050;
+            background-color: transparent;
+            padding: 4px;
+        }
+        
+        QMenu {
+            background-color: #2d1f1f;
+            color: #e0e0e0;
+            border: 1px solid #4a2828;
+            padding: 4px;
+        }
+        
+        QMenu::item:selected {
+            background-color: #8b2e2e;
+            color: #ffffff;
+        }
+        
+        QDialog {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+        }
+        
+        QMessageBox {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+        }
+        
+        QMessageBox QPushButton {
+            background-color: #8b2e2e;
+            color: #ffffff;
+            border: 1px solid #a33c3c;
+            border-radius: 4px;
+            padding: 6px 16px;
+            min-width: 80px;
+        }
+        
+        QMessageBox QPushButton:hover {
+            background-color: #a33c3c;
+        }
+        
+        QGridLayout {
+            background-color: #1a1a1a;
+        }
+        
+        QButtonGroup::button {
+            background-color: #3d2020;
+            color: #e0e0e0;
+            border: 1px solid #5a2a2a;
+            border-radius: 4px;
+            padding: 8px;
+            min-width: 60px;
+        }
+        
+        QButtonGroup::button:hover {
+            background-color: #5a2a2a;
+            border: 1px solid #8b2e2e;
+        }
+        
+        QButtonGroup::button:checked {
+            background-color: #8b2e2e;
+            border: 2px solid #c45050;
+        }
+        
+        QButtonGroup::button:disabled {
+            background-color: #2d1f1f;
+            color: #555555;
+            border: 1px solid #3d2020;
+        }
+        
+        QScrollBar:vertical {
+            background-color: #2d1f1f;
+            width: 12px;
+            border: none;
+        }
+        
+        QScrollBar::handle:vertical {
+            background-color: #8b2e2e;
+            border-radius: 6px;
+            min-height: 30px;
+        }
+        
+        QScrollBar::handle:vertical:hover {
+            background-color: #a33c3c;
+        }
+        
+        QScrollBar:horizontal {
+            background-color: #2d1f1f;
+            height: 12px;
+            border: none;
+        }
+        
+        QScrollBar::handle:horizontal {
+            background-color: #8b2e2e;
+            border-radius: 6px;
+            min-width: 30px;
+        }
+        """
+        
+        self.setStyleSheet(dark_stylesheet)
     
     def show_context_menu(self, pos):
         scene_pos = self.view.mapToScene(pos)
@@ -422,14 +570,29 @@ class MainWindow(QMainWindow):
         try:
             action, node_name, path = next(self.solver_generator)
             
+            is_start = (self.start_node and node_name == self.start_node.get_name())
+            is_goal = (node_name == goal_node)
+            
             for item in self.scene.items():
                 if isinstance(item, NodeItem):
                     if item.get_name() == node_name:
                         if action == 'visit' or action == 'exploring':
-                            item.set_visual_state('visiting')
+                            if is_start or is_goal:
+                                item.set_visual_state('visiting')
+                            else:
+                                item.set_visual_state('visiting')
                         elif action == 'visited':
-                            item.set_visual_state('visited')
+                            if is_start:
+                                item.set_is_start(True)
+                            elif is_goal:
+                                item.set_as_goal(True)
+                            else:
+                                item.set_visual_state('visited')
                         elif action == 'goal_found':
+                            if is_start:
+                                item.set_is_start(True)
+                            if is_goal:
+                                item.set_as_goal(True)
                             self._highlight_path(path, goal_node)
                             self._show_result(path)
                             self.stop_animation()
@@ -448,11 +611,7 @@ class MainWindow(QMainWindow):
     
     def _highlight_path(self, path: list, goal_node: str):
         for item in self.scene.items():
-            if isinstance(item, NodeItem):
-                if item.get_name() in path:
-                    item.set_visual_state('path')
-            
-            elif isinstance(item, EdgeItem):
+            if isinstance(item, EdgeItem):
                 for i in range(len(path) - 1):
                     if item.get_source_name() == path[i] and item.get_target_name() == path[i+1]:
                         item.set_visual_state('path')

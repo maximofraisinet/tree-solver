@@ -26,8 +26,8 @@ class EdgeItem(QGraphicsItem):
         source_node.connected_edges.append(self)
         target_node.connected_edges.append(self)
         
-        self.default_color = QColor("#2c3e50")
-        self.path_color = QColor("#27ae60")
+        self.default_color = QColor("#8b2e2e")
+        self.path_color = QColor("#2ecc71")
         self.current_pen = QPen(self.default_color, 2)
         
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable)
@@ -65,7 +65,7 @@ class EdgeItem(QGraphicsItem):
         end_y = target_center.y() - node_radius * sin(angle)
         
         if self.isSelected():
-            pen = QPen(QColor("#3498db"), 2)
+            pen = QPen(QColor("#c0392b"), 2)
         else:
             pen = self.current_pen
         
