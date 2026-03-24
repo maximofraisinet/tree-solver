@@ -52,6 +52,16 @@ Explores as far as possible along each branch before backtracking.
 4. Add its children to the beginning of stack
 5. Repeat until goal is found
 
+## Demo Videos
+
+### Breadth-First Search (BFS)
+
+Put the video here
+
+### Depth-First Search (DFS)
+
+Put the video here
+
 ## Requirements
 
 - Python 3.x
