@@ -55,3 +55,6 @@ coverage/
 # Project specific
 *.log
 test_demo.py
+
+# Documentation
+docs/

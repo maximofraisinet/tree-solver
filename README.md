@@ -28,6 +28,21 @@ python main.py
 - **Drag**: Move nodes around the canvas
 - **Right-click**: Context menu (Mark Goal/Start, Delete)
 
+### Visual Design
+
+- **Background**: Light gray (#f0f0f0)
+- **Node Default**: White circle with black border
+- **Node Goal**: Green border (#27ae60)
+- **Node Selected**: Blue border (#3498db)
+- **Edge Color**: Black arrows
+
+### Algorithm Visualization Colors
+
+- **Unvisited**: White (#ffffff)
+- **Visiting (frontier)**: Yellow (#f1c40f)
+- **Visited**: Gray (#bdc3c7)
+- **Final Path**: Green (#27ae60)
+
 ## Algorithms
 
 ### Breadth-First Search (BFS)
@@ -53,6 +68,21 @@ Explores as far as possible along each branch before backtracking.
 3. Process first node in stack
 4. Add its children to the beginning of stack
 5. Repeat until goal is found
+
+## Architecture
+
+- **Model Layer**: Pure Python graph representation (dict)
+- **View Layer**: PyQt6 QGraphicsScene/QGraphicsView
+- **Controller**: MainWindow orchestrating interactions
+- **Algorithm Layer**: Generator functions for BFS/DFS
+
+## Validation
+
+Before solving, the app validates:
+- Exactly one start node (0 incoming edges)
+- Exactly one goal node marked
+- No cycles present
+- All nodes reachable from start
 
 ## Demo Videos
 
