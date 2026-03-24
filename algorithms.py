@@ -36,6 +36,8 @@ def bfs_generator(
             yield ('goal_found', current, path)
             return
         
+        yield ('visited', current, path)
+        
         neighbors = graph.get(current, [])
         for neighbor in neighbors:
             if neighbor not in visited:
@@ -43,8 +45,6 @@ def bfs_generator(
                 new_path = path + [neighbor]
                 frontier.append((neighbor, new_path))
                 yield ('exploring', neighbor, new_path)
-        
-        yield ('visited', current, path)
 
 
 def dfs_generator(
