@@ -1,5 +1,7 @@
 # Tree Solver
 
+Artificial Intelligence Project - UTN-FRCU Universidad Tecnológica Nacional - Facultad Regional Concepción del Uruguay
+
 An interactive desktop application for visualizing and solving tree search algorithms.
 
 ## Installation
@@ -56,11 +58,15 @@ Explores as far as possible along each branch before backtracking.
 
 ### Breadth-First Search (BFS)
 
-Put the video here
+https://github.com/user-attachments/assets/c0efc27a-13da-4041-9433-8636646a2e44
+
+<img width="1195" height="429" alt="BFS" src="https://github.com/user-attachments/assets/1f61af21-5ff0-4798-a9e8-4e028e32bb74" />
 
 ### Depth-First Search (DFS)
 
-Put the video here
+https://github.com/user-attachments/assets/48e558f8-8a3a-45b7-ac66-22c0018e4c75
+
+<img width="1201" height="426" alt="DFS" src="https://github.com/user-attachments/assets/38d65931-a29e-4429-ba57-ba8703843563" />
 
 ## Requirements
 
