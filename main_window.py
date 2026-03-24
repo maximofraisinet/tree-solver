@@ -18,20 +18,20 @@ from validator import validate_tree, build_graph_from_scene, ValidationError
 
 
 class ConnectDialog(QDialog):
-    """Dialog for selecting parent and child nodes visually."""
+    """Dialog for selecting parent and multiple child nodes."""
     
     def __init__(self, nodes, parent=None):
         super().__init__(parent)
         self.nodes = nodes
         self.parent_node = None
-        self.child_node = None
+        self.child_nodes = []
         self.setWindowTitle("Connect Nodes")
-        self.setMinimumSize(400, 300)
+        self.setMinimumSize(450, 400)
         
         layout = QVBoxLayout(self)
         
-        layout.addWidget(QLabel("Select PARENT node:"))
-        self.parent_group = QButtonGroup(self)
+        layout.addWidget(QLabel("Select ONE parent node:"))
+        self.parent_buttons = []
         parent_layout = QGridLayout()
         
         cols = 4
@@ -40,14 +40,14 @@ class ConnectDialog(QDialog):
             col = i % cols
             btn = QPushButton(node.get_name())
             btn.setCheckable(True)
-            btn.clicked.connect(lambda checked, n=node: self.select_parent(n))
-            self.parent_group.addButton(btn)
+            btn.clicked.connect(lambda checked, n=node, b=btn: self.select_parent(n, b))
             parent_layout.addWidget(btn, row, col)
+            self.parent_buttons.append((btn, node))
         
         layout.addLayout(parent_layout)
         
-        layout.addWidget(QLabel("Select CHILD node:"))
-        self.child_group = QButtonGroup(self)
+        layout.addWidget(QLabel("Select CHILD nodes (multiple allowed):"))
+        self.child_buttons = []
         child_layout = QGridLayout()
         
         for i, node in enumerate(nodes):
@@ -56,14 +56,13 @@ class ConnectDialog(QDialog):
             btn = QPushButton(node.get_name())
             btn.setCheckable(True)
             btn.setEnabled(False)
-            btn.clicked.connect(lambda checked, n=node: self.select_child(n))
-            self.child_group.addButton(btn)
+            btn.clicked.connect(lambda checked, n=node, b=btn: self.toggle_child(n, b))
             child_layout.addWidget(btn, row, col)
+            self.child_buttons.append((btn, node))
         
-        self.child_buttons = child_layout
         layout.addLayout(child_layout)
         
-        self.selected_label = QLabel("No connection selected")
+        self.selected_label = QLabel("Select a parent node first")
         layout.addWidget(self.selected_label)
         
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
@@ -71,31 +70,43 @@ class ConnectDialog(QDialog):
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
     
-    def select_parent(self, node):
-        for btn in self.parent_group.buttons():
-            btn.setEnabled(False)
-        
-        for btn in self.child_group.buttons():
-            if btn.text() != node.get_name():
-                btn.setEnabled(True)
-        
+    def select_parent(self, node, btn):
         self.parent_node = node
+        self.child_nodes = []
+        
+        for b, n in self.parent_buttons:
+            b.setEnabled(False)
+            b.setChecked(False)
+        
+        for b, n in self.child_buttons:
+            if n != node:
+                b.setEnabled(True)
+            else:
+                b.setEnabled(False)
+                b.setChecked(False)
+        
         self.update_label()
     
-    def select_child(self, node):
-        for btn in self.child_group.buttons():
-            btn.setEnabled(False)
+    def toggle_child(self, node, btn):
+        if node in self.child_nodes:
+            self.child_nodes.remove(node)
+            btn.setChecked(False)
+        else:
+            self.child_nodes.append(node)
         
-        self.child_node = node
         self.update_label()
     
     def update_label(self):
-        if self.parent_node and self.child_node:
-            self.selected_label.setText(f"Connect: {self.parent_node.get_name()} -> {self.child_node.get_name()}")
+        if self.parent_node and self.child_nodes:
+            children_names = ", ".join([n.get_name() for n in self.child_nodes])
+            self.selected_label.setText(f"Parent: {self.parent_node.get_name()} -> Children: {children_names}")
         elif self.parent_node:
-            self.selected_label.setText(f"Parent: {self.parent_node.get_name()} (now select child)")
+            self.selected_label.setText(f"Parent: {self.parent_node.get_name()} (select children)")
         else:
-            self.selected_label.setText("No connection selected")
+            self.selected_label.setText("Select a parent node first")
+    
+    def get_connections(self):
+        return [(self.parent_node, child) for child in self.child_nodes]
 
 
 class SelectNodeDialog(QDialog):
@@ -429,8 +440,16 @@ class MainWindow(QMainWindow):
         dialog = ConnectDialog(nodes, self)
         
         if dialog.exec() == QDialog.DialogCode.Accepted:
-            if dialog.parent_node and dialog.child_node:
-                self.create_edge(dialog.parent_node, dialog.child_node)
+            connections = dialog.get_connections()
+            if connections:
+                for parent, child in connections:
+                    self.create_edge(parent, child)
+                if len(connections) == 1:
+                    self.status_label.setText(f"Connected: {connections[0][0].get_name()} -> {connections[0][1].get_name()}")
+                else:
+                    parent_name = connections[0][0].get_name()
+                    children_names = ", ".join([c.get_name() for p, c in connections])
+                    self.status_label.setText(f"Connected {parent_name} -> {children_names}")
     
     def set_start_dialog(self):
         nodes = [item for item in self.scene.items() if isinstance(item, NodeItem)]
