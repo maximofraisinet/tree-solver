@@ -3,9 +3,9 @@ Edge graphics item for the tree solver canvas.
 Represents a directed edge from one node to another.
 """
 
-from PyQt6.QtWidgets import QGraphicsItem, QGraphicsSceneContextMenuEvent
-from PyQt6.QtCore import Qt, QPointF, pyqtSignal
-from PyQt6.QtGui import QPen, QColor, QPainter, QPainterPath, QPolygonF
+from PyQt6.QtWidgets import QGraphicsItem
+from PyQt6.QtCore import Qt, QPointF, QRectF
+from PyQt6.QtGui import QPen, QColor, QPainter, QPolygonF
 from math import atan2, cos, sin, pi
 
 
@@ -23,15 +23,15 @@ class EdgeItem(QGraphicsItem):
         self.source_node = source_node
         self.target_node = target_node
         
+        source_node.connected_edges.append(self)
+        target_node.connected_edges.append(self)
+        
         self.default_color = QColor("#2c3e50")
-        self.visited_color = QColor("#bdc3c7")
         self.path_color = QColor("#27ae60")
+        self.current_pen = QPen(self.default_color, 2)
         
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable)
         self.setZValue(-1)
-        
-        self.source_node.positionChanged.connect(self.update_position)
-        self.target_node.positionChanged.connect(self.update_position)
     
     def update_position(self):
         self.update()
@@ -45,7 +45,7 @@ class EdgeItem(QGraphicsItem):
         max_x = max(source_pos.x(), target_pos.x()) + ARROW_SIZE + 30
         max_y = max(source_pos.y(), target_pos.y()) + ARROW_SIZE + 30
         
-        return Qt.QRectF(min_x, min_y, max_x - min_x, max_y - min_y)
+        return QRectF(min_x, min_y, max_x - min_x, max_y - min_y)
     
     def paint(self, painter: QPainter, option, widget=None):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -67,13 +67,10 @@ class EdgeItem(QGraphicsItem):
         if self.isSelected():
             pen = QPen(QColor("#3498db"), 2)
         else:
-            pen = QPen(self.default_color, 2)
+            pen = self.current_pen
         
         painter.setPen(pen)
         painter.drawLine(QPointF(start_x, start_y), QPointF(end_x, end_y))
-        
-        arrow_pen = QPen(pen)
-        painter.setPen(arrow_pen)
         
         arrow_point = QPointF(end_x, end_y)
         arrow_angle1 = angle + pi - pi / 6
@@ -97,38 +94,22 @@ class EdgeItem(QGraphicsItem):
     def get_target_name(self) -> str:
         return self.target_node.get_name()
     
+    def get_nodes(self):
+        return (self.source_node, self.target_node)
+    
     def set_visual_state(self, state: str):
-        """Set visual state for animation."""
         if state == 'path':
-            pen = QPen(self.path_color, 3)
-        elif state == 'visited':
-            pen = QPen(self.visited_color, 2)
+            self.current_pen = QPen(self.path_color, 3)
         else:
-            pen = QPen(self.default_color, 2)
-        
-        self.setPen(pen)
+            self.current_pen = QPen(self.default_color, 2)
         self.update()
     
     def reset_visual_state(self):
-        """Reset edge to default appearance."""
-        pen = QPen(self.default_color, 2)
-        self.setPen(pen)
+        self.current_pen = QPen(self.default_color, 2)
         self.update()
     
-    def contextMenuEvent(self, event: QGraphicsSceneContextMenuEvent):
-        """Show context menu to delete edge."""
-        from PyQt6.QtWidgets import QMenu
-        
-        context_menu = QMenu()
-        delete_action = context_menu.addAction("Delete Edge")
-        
-        action = context_menu.exec(event.screenPos())
-        
-        if action == delete_action:
-            if self.source_node:
-                self.source_node.positionChanged.disconnect(self.update_position)
-            if self.target_node:
-                self.target_node.positionChanged.disconnect(self.update_position)
-            self.scene().removeItem(self)
-        
-        event.accept()
+    def remove_from_nodes(self):
+        if self in self.source_node.connected_edges:
+            self.source_node.connected_edges.remove(self)
+        if self in self.target_node.connected_edges:
+            self.target_node.connected_edges.remove(self)

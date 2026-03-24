@@ -42,5 +42,16 @@ env/
 .DS_Store
 Thumbs.db
 
+# Testing
+tests/
+test_*.py
+*_test.py
+.pytest_cache/
+pytest.ini
+tox.ini
+coverage/
+*.cover
+
 # Project specific
 *.log
+test_demo.py
