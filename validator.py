@@ -145,6 +145,7 @@ def build_graph_from_scene(nodes: List, edges: List) -> Tuple[Dict[str, List[str
     """
     node_names = {node.get_name() for node in nodes}
     graph = {name: [] for name in node_names}
+    node_by_name = {node.get_name(): node for node in nodes}
     goal_node = None
     
     for node in nodes:
@@ -157,5 +158,11 @@ def build_graph_from_scene(nodes: List, edges: List) -> Tuple[Dict[str, List[str
         
         if source in graph and target in graph:
             graph[source].append(target)
+    
+    for node_name in graph:
+        node_obj = node_by_name.get(node_name)
+        if node_obj:
+            neighbors = graph[node_name]
+            neighbors.sort(key=lambda n: node_by_name.get(n, node_obj).pos().x())
     
     return graph, goal_node
