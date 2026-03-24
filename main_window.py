@@ -6,10 +6,11 @@ Handles UI, interactions, and animation orchestration.
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QToolBar, QHBoxLayout,
     QGraphicsView, QGraphicsScene, QMessageBox, QDialog, QGridLayout,
-    QLabel, QPushButton, QMenu, QButtonGroup, QDialogButtonBox
+    QLabel, QPushButton, QMenu, QButtonGroup, QDialogButtonBox, QFileDialog
 )
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QPen, QColor, QPainter, QAction
+import json
 
 from node_item import NodeItem
 from edge_item import EdgeItem
@@ -216,6 +217,16 @@ class MainWindow(QMainWindow):
         self.clear_btn = QPushButton("Clear")
         self.clear_btn.clicked.connect(self.clear_canvas)
         toolbar.addWidget(self.clear_btn)
+        
+        toolbar.addSeparator()
+        
+        self.save_btn = QPushButton("Save JSON")
+        self.save_btn.clicked.connect(self.save_to_json)
+        toolbar.addWidget(self.save_btn)
+        
+        self.load_btn = QPushButton("Load JSON")
+        self.load_btn.clicked.connect(self.load_from_json)
+        toolbar.addWidget(self.load_btn)
         
         self.scene = QGraphicsScene(self)
         self.scene.setSceneRect(-500, -350, 1000, 700)
@@ -505,6 +516,127 @@ class MainWindow(QMainWindow):
         self.node_counter = 0
         self.start_node = None
         self.status_label.setText("Canvas cleared.")
+    
+    def save_to_json(self):
+        nodes = [item for item in self.scene.items() if isinstance(item, NodeItem)]
+        
+        if not nodes:
+            QMessageBox.warning(self, "Error", "No nodes to save!")
+            return
+        
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save Tree to JSON",
+            "",
+            "JSON Files (*.json)"
+        )
+        
+        if not file_path:
+            return
+        
+        node_map = {}
+        json_nodes = []
+        
+        for node in nodes:
+            node_data = {
+                "name": node.get_name(),
+                "x": node.pos().x(),
+                "y": node.pos().y(),
+                "is_start": node.is_start_node(),
+                "is_goal": node.is_goal_node()
+            }
+            json_nodes.append(node_data)
+            node_map[node.get_name()] = node
+        
+        json_edges = []
+        for item in self.scene.items():
+            if isinstance(item, EdgeItem):
+                source = item.get_source_name()
+                target = item.get_target_name()
+                if source in node_map and target in node_map:
+                    json_edges.append({
+                        "source": source,
+                        "target": target
+                    })
+        
+        tree_data = {
+            "nodes": json_nodes,
+            "edges": json_edges
+        }
+        
+        try:
+            with open(file_path, 'w') as f:
+                json.dump(tree_data, f, indent=2)
+            self.status_label.setText(f"Saved to {file_path}")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to save: {str(e)}")
+    
+    def load_from_json(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Load Tree from JSON",
+            "",
+            "JSON Files (*.json)"
+        )
+        
+        if not file_path:
+            return
+        
+        try:
+            with open(file_path, 'r') as f:
+                tree_data = json.load(f)
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to load: {str(e)}")
+            return
+        
+        if "nodes" not in tree_data or "edges" not in tree_data:
+            QMessageBox.critical(self, "Error", "Invalid JSON format: missing 'nodes' or 'edges'")
+            return
+        
+        self.clear_canvas()
+        
+        node_map = {}
+        
+        for node_data in tree_data["nodes"]:
+            name = node_data.get("name", "")
+            x = node_data.get("x", 0)
+            y = node_data.get("y", 0)
+            is_start = node_data.get("is_start", False)
+            is_goal = node_data.get("is_goal", False)
+            
+            if not name:
+                continue
+            
+            node = NodeItem(name, x, y, self.scene)
+            self.scene.addItem(node)
+            
+            if is_start:
+                node.set_is_start(True)
+                self.start_node = node
+            
+            if is_goal:
+                node.set_as_goal(True)
+            
+            node_map[name] = node
+            
+            try:
+                num = int(name.replace("Node", ""))
+                if num > self.node_counter:
+                    self.node_counter = num
+            except ValueError:
+                pass
+        
+        for edge_data in tree_data["edges"]:
+            source_name = edge_data.get("source", "")
+            target_name = edge_data.get("target", "")
+            
+            if source_name in node_map and target_name in node_map:
+                source_node = node_map[source_name]
+                target_node = node_map[target_name]
+                edge = EdgeItem(source_node, target_node)
+                self.scene.addItem(edge)
+        
+        self.status_label.setText(f"Loaded from {file_path}")
     
     def solve_tree(self, algorithm: str):
         if self.solving:
